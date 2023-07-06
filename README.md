@@ -12,7 +12,9 @@ git clone --recurse-submodules https://github.com/gp-1108/CV_Tray_Detection.git
 
 Download a model from hugghing face c++ compatible:
 [HuggingFace Repositories tagged with `clip.cpp`](https://huggingface.co/models?other=clip.cpp)
-The model used while testing was this [one](https://huggingface.co/Green-Sky/ggml_openai_clip-vit-base-patch32/blob/main/openai_clip-vit-base-patch32.ggmlv0.f16.bin)
+The models used while testing were this [one](https://huggingface.co/Green-Sky/ggml_openai_clip-vit-base-patch32/blob/main/openai_clip-vit-base-patch32.ggmlv0.f16.bin) or this [one](https://huggingface.co/Green-Sky/ggml_laion_clip-vit-b-32-laion2b-s34b-b79k/blob/main/laion_clip-vit-b-32-laion2b-s34b-b79k.ggmlv0.f16.bin)
+
+Probably Laion is better but it is bigger and slower to load.
 
 ## Building
 To build the project use the following commands:

@@ -117,3 +117,19 @@ bool ImagePredictor::clip_image_load_from_mat(const cv::Mat &image, clip_image_u
 
   return true;
 }
+
+bool ImagePredictor::modify_labels(const std::vector<std::string> &labels)
+{
+  try {
+    for (int i = 0; i < labels.size(); i++)
+    {
+      params.texts[i] = labels[i];
+    }
+    // Eliminating old values
+    params.texts.erase(params.texts.begin() + labels.size(), params.texts.end());
+  } catch (const std::exception& e) {
+    std::cerr << e.what() << '\n';
+    return false;
+  }
+  return true;
+}

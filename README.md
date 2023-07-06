@@ -27,6 +27,6 @@ cmake --build .
 ## Usage
 To run the project (by the simple main example) copy the model downloaded from hugging face in the build folder and run the following command:
 ```bash
-./tray_main <path_to_image>
+./tray_main <path_to_image1> <path_to_image2> 
 ```
 

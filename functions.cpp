@@ -68,12 +68,13 @@ void print_image(Mat& img, string title, int waitKeyValue){
 //this function detect dishes from original images using the HoughCircles function, then create a vector of single-dish images and returns it
 vector<Mat> detect_dishes(const Mat& input){
 
-    Mat img = input.clone();
+    Mat img = input.clone(); //copio originale 
+
     int padding = 400;
-    copyMakeBorder(img, img, padding, padding, padding, padding, BORDER_CONSTANT, Scalar(0,0,0));
+    copyMakeBorder(img, img, padding, padding, padding, padding, BORDER_CONSTANT, Scalar(0,0,0)); //lo incornicio
      
     Mat gray;
-    cvtColor(img, gray, COLOR_BGR2GRAY);
+    cvtColor(img, gray, COLOR_BGR2GRAY); 
 
     Mat blurred;
     GaussianBlur(gray, blurred, Size(7, 7), 1.5, 1.5);
@@ -83,29 +84,38 @@ vector<Mat> detect_dishes(const Mat& input){
     vector<Mat> dishes;
 
     HoughCircles(blurred, circles, HOUGH_GRADIENT, 1.5, 480, 120, 120, 250, 700); //si può pensare di rendere il raggio dipendente dalla grandezza dell'immagine, una sorta di normalizzazione
+    
     cout << "Detected circles: " << circles.size() << endl;
 
     for(int i = 0; i < circles.size(); i++){
         
         Mat mask = img.clone();
+        Mat to_be_cropped = Mat::zeros(img.rows, img.cols, CV_8UC3); //creo una copia dell'originale incorniciato
 
-        int point_x = cvRound(circles[i][0]);
-        int point_y = cvRound(circles[i][1]);
+        int point_x = cvRound(circles[i][0]); //x del centro
+        int point_y = cvRound(circles[i][1]); //y del centro
 
-        Point center(point_x, point_y);
+        Point center(point_x, point_y); //il centro
 
-        int radius = cvRound(circles[i][2]);
-        int pad = 20;
-        int dim = 2 * (radius + pad);
+        int radius = cvRound(circles[i][2]); //il raggio
+        int pad = 20; //margine preso dalla fine del cerchio per il ritaglio
+        int dim = 2 * (radius + pad); //dimensione ritaglio
 
-        circle(mask, center, radius, Scalar(0,0,255), FILLED);
+        circle(mask, center, radius, Scalar(255,0,0), FILLED);
         
         Point top_left(point_x - radius - pad, point_y - radius - pad);
         Point bottom_right(point_x + radius + pad, point_y + radius + pad);
-
+        
+        for(int i = 0; i < mask.rows; i++){
+            for(int j = 0; j < mask.cols; j++){
+                if(mask.at<Vec3b>(i,j)[0] == 255 && mask.at<Vec3b>(i,j)[1] == 0 && mask.at<Vec3b>(i,j)[2] == 0){
+                    to_be_cropped.at<Vec3b>(i,j) = img.at<Vec3b>(i,j);
+                }
+            }
+        }
         //rectangle(mask, top_left, bottom_right, Scalar(255,0,0), 2, LINE_8);
 
-        Mat dish = img(Rect(top_left.x, top_left.y, dim, dim));
+        Mat dish = to_be_cropped(Rect(top_left.x, top_left.y, dim, dim));
         dishes.push_back(dish);
     }
 
@@ -130,7 +140,25 @@ void generate_all_single_dishes(){
                 
         for(int i = 0; i < dishes.size(); i++){
             //print_image(dishes[i], "Dish found", 0);
-            imwrite("./image_" + to_string(k) + ".jpg", dishes[i]);
+            imwrite("./dish_" + to_string(k) + ".jpg", dishes[i]);
         }
     }
+}
+
+void segment_pietanze(const Mat& dish){
+
+    Mat img = dish.clone();
+
+    Mat gray;
+    cvtColor(img, gray, COLOR_BGR2GRAY);
+
+    Mat blurred;
+    GaussianBlur(gray, blurred, Size(7, 7), 1.5, 1.5);
+
+    print_image(blurred, "First blurring");
+
+    Mat thresholded;
+    threshold(blurred, thresholded, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
+
+
 }

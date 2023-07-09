@@ -13,8 +13,9 @@ void check_input(int argc, char** argv, Mat& img1, Mat& img2);
 
 void print_image(Mat& img, string title, int waitKeyValue);
 
-vector<Mat> detect_dishes(const Mat& img);
+void extract_plates(const Mat& img, vector<Mat>& plates);
 
-void generate_all_single_dishes();
+void generate_all_single_plates();
 
+void segment_dishes(const Mat& plate);
 

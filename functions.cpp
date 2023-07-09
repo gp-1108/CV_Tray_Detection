@@ -66,13 +66,13 @@ void print_image(Mat& img, string title, int waitKeyValue){
 //tray8 OK tutte
 
 //this function detect dishes from original images using the HoughCircles function, then create a vector of single-dish images and returns it
-vector<Mat> detect_dishes(const Mat& input){
+void extract_plates(const Mat& input, vector<Mat> & plates){
 
     Mat img = input.clone(); //copio originale 
 
     int padding = 400;
     copyMakeBorder(img, img, padding, padding, padding, padding, BORDER_CONSTANT, Scalar(0,0,0)); //lo incornicio
-     
+    
     Mat gray;
     cvtColor(img, gray, COLOR_BGR2GRAY); 
 
@@ -80,8 +80,6 @@ vector<Mat> detect_dishes(const Mat& input){
     GaussianBlur(gray, blurred, Size(7, 7), 1.5, 1.5);
 
     vector<Vec3f> circles;
-    
-    vector<Mat> dishes;
 
     HoughCircles(blurred, circles, HOUGH_GRADIENT, 1.5, 480, 120, 120, 250, 700); //si può pensare di rendere il raggio dipendente dalla grandezza dell'immagine, una sorta di normalizzazione
     
@@ -91,7 +89,14 @@ vector<Mat> detect_dishes(const Mat& input){
         
         Mat mask = img.clone();
         Mat to_be_cropped = Mat::zeros(img.rows, img.cols, CV_8UC3); //creo una copia dell'originale incorniciato
-
+        /*for(int i = 0; i < to_be_cropped.rows; i++){
+            for(int j = 0; j < to_be_cropped.cols; j++){
+                to_be_cropped.at<Vec3b>(i,j)[0] = 255;
+                to_be_cropped.at<Vec3b>(i,j)[1] = 255;
+                to_be_cropped.at<Vec3b>(i,j)[2] = 255;
+            }
+        }
+        */
         int point_x = cvRound(circles[i][0]); //x del centro
         int point_y = cvRound(circles[i][1]); //y del centro
 
@@ -115,15 +120,13 @@ vector<Mat> detect_dishes(const Mat& input){
         }
         //rectangle(mask, top_left, bottom_right, Scalar(255,0,0), 2, LINE_8);
 
-        Mat dish = to_be_cropped(Rect(top_left.x, top_left.y, dim, dim));
-        dishes.push_back(dish);
+        Mat plate = to_be_cropped(Rect(top_left.x, top_left.y, dim, dim));
+        plates.push_back(plate);
     }
-
-    return dishes;
 }
 
 //this function takes all the test set images and save the single-dish images for all, storing them in the current folder (./)
-void generate_all_single_dishes(){
+void generate_all_single_plates(){
     
     vector<Mat> images;
     
@@ -135,30 +138,42 @@ void generate_all_single_dishes(){
         }
     }
     
+    cout << images.size() << endl;
+
     for(int k = 0; k < images.size(); k++){
-        vector<Mat> dishes = detect_dishes(images[k]);
-                
-        for(int i = 0; i < dishes.size(); i++){
-            //print_image(dishes[i], "Dish found", 0);
-            imwrite("./dish_" + to_string(k) + ".jpg", dishes[i]);
+
+        vector<Mat> plates;
+        extract_plates(images[k], plates);
+        
+        for(int i = 0; i < plates.size(); i++){
+            //print_image(plates[i], "Plate found", 0);
+            imwrite("../images/plate_" + to_string(k) + "_" + to_string(i) + ".jpg", plates[i]);
         }
     }
 }
 
-void segment_pietanze(const Mat& dish){
 
-    Mat img = dish.clone();
+void segment_dishes(const Mat& plate){
+
+    Mat img = plate.clone();
 
     Mat gray;
     cvtColor(img, gray, COLOR_BGR2GRAY);
 
+    print_image(gray, "Grayscale", 0);
+
     Mat blurred;
     GaussianBlur(gray, blurred, Size(7, 7), 1.5, 1.5);
+    GaussianBlur(blurred, blurred, Size(7, 7), 3, 3);
+    GaussianBlur(blurred, blurred, Size(9, 9), 3, 3);
+    GaussianBlur(blurred, blurred, Size(9, 9), 3, 3);
+    GaussianBlur(blurred, blurred, Size(9, 9), 3, 3);
 
-    print_image(blurred, "First blurring");
+    print_image(blurred, "First blurring", 0);
 
     Mat thresholded;
-    threshold(blurred, thresholded, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
+    threshold(blurred, thresholded, 80, 255, THRESH_BINARY); 
+    //adaptiveThreshold(blurred, thresholded, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY_INV, 5, 0);
 
-
+    print_image(thresholded, "After threshold", 0);
 }

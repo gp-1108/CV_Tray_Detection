@@ -1,6 +1,7 @@
 #include <opencv2/highgui.hpp>
 #include <iostream>
 #include <opencv2/imgproc.hpp>
+#include "opencv2/imgcodecs.hpp"
 #include <opencv2/core/hal/interface.h>
 #include <math.h>
 
@@ -17,5 +18,6 @@ void extract_plates(const Mat& img, vector<Mat>& plates);
 
 void generate_all_single_plates();
 
-void segment_dishes(const Mat& plate);
+void segment_initial_dishes(const Mat& plate, Mat& output, Mat& dst);
 
+void generate_all_single_dishes();

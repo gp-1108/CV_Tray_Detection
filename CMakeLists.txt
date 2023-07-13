@@ -3,7 +3,12 @@ cmake_minimum_required(VERSION 3.5)
 project(CV_Project_Tray_Detection
   VERSION 1.0
   DESCRIPTION "Computer Vision Project - Tray Detection"
-  LANGUAGES CXX)
+  LANGUAGES CXX
+)
+
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 11)
+
 
 find_package(OpenCV 4 REQUIRED)
 

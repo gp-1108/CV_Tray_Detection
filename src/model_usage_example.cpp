@@ -1,5 +1,5 @@
 #include <iostream>
-#include "ImagePredictor.h"
+#include "model/ImagePredictor.h"
 #include <opencv2/highgui.hpp>
 
 /*

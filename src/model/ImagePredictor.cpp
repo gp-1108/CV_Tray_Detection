@@ -9,7 +9,6 @@ ImagePredictor::ImagePredictor(const std::string &modelPath)
 {
   params.model = modelPath;
   std::vector<std::string> prompts = {
-      "Others",
       "pasta with pesto",
       "pasta with tomato sauce",
       "pasta with meat sauce",

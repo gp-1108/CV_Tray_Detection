@@ -18,8 +18,5 @@ include_directories(clip.cpp)
 include_directories(clip.cpp/ggml)
 
 
-add_executable(tray_main main.cpp ImagePredictor.cpp)
-target_link_libraries(tray_main PRIVATE ${OpenCV_LIBS} clip)
-
-# Include directories for the clip.cpp library
-target_include_directories(tray_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/clip.cpp/ggml/include)
+add_subdirectory(src)
+add_subdirectory(tests)

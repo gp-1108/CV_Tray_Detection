@@ -1,134 +1,101 @@
-#include "clip.h"
-#include "examples/common-clip.h"
+#include <torch/script.h>
+#include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/highgui.hpp>
+#include <cstdio>
 #include "ImagePredictor.h"
-#include <iostream>
 
 ImagePredictor::ImagePredictor(const std::string &modelPath)
 {
-  params.model = modelPath;
-  std::vector<std::string> prompts = {
-      "pasta with pesto",
-      "pasta with tomato sauce",
-      "pasta with meat sauce",
-      "pasta with clams and mussels",
-      "pilaw rice with peppers and peas",
-      "grilled pork cutlet",
-      "fish cutlet",
-      "rabbit",
-      "seafood salad",
-      "beans",
-      "basil potatoes",
-      "salad",
-      "bread"};
-  params.texts = prompts;
-
-  ctx = clip_model_load(params.model.c_str(), 0); // 0 flag means no verbosity
+  try
+  {
+    // Load the model from the provided path
+    model = torch::jit::load(modelPath);
+  }
+  catch (const c10::Error &e)
+  {
+    throw std::runtime_error("Error loading the model: " + std::string(e.what()));
+  }
 }
 
 ImagePredictor::~ImagePredictor()
 {
-  clip_free(ctx);
+  // Destructor
 }
 
-std::vector<std::pair<std::string, float>> ImagePredictor::predict(const cv::Mat &image)
+std::vector<double> ImagePredictor::predict(const cv::Mat &image)
 {
-  clip_image_u8 img;
-  clip_image_f32 img_res;
-  if (!clip_image_load_from_mat(image, img))
+  // Preprocess the image
+  cv::Mat preprocessedImage;
+  image.copyTo(preprocessedImage);
+  preprocessImage(image, preprocessedImage);
+
+  // Create a tensor from the preprocessed image
+  torch::Tensor inputTensor;
+  if (!cv_image_to_tensor(preprocessedImage, inputTensor))
   {
-    fprintf(stderr, "%s: failed to load image'\n", __func__);
-    return {};
+    throw std::runtime_error("Error converting image to tensor");
   }
 
-  const int vec_dim = ctx->vision_model.hparams.projection_dim;
-  clip_image_preprocess(ctx, &img, &img_res);
-  float img_vec[vec_dim];
-  if (!clip_image_encode(ctx, params.n_threads, img_res, img_vec))
+  // Create a vector of inputs
+  std::vector<torch::jit::IValue> inputs;
+  inputs.push_back(inputTensor);
+
+  // Execute the model
+  at::Tensor output = model.forward(inputs).toTensor();
+
+  // Process the output
+  std::vector<double> probs;
+  for (int i = 0; i < output.size(0); i++)
   {
-    return {};
+    double value = output[i].item<double>();
+    probs.push_back(value);
   }
 
-  float txt_vec[vec_dim];
-  float similarities[params.texts.size()];
-
-  // Encode texts and compute similarities
-  for (int i = 0; i < params.texts.size(); i++)
-  {
-    auto tokens = clip_tokenize(ctx, params.texts[i]);
-    clip_text_encode(ctx, params.n_threads, tokens, txt_vec);
-    similarities[i] = clip_similarity_score(img_vec, txt_vec, vec_dim);
-  }
-
-  // Softmax
-  float sorted_scores[params.texts.size()];
-  int indices[params.texts.size()];
-  softmax_with_sorting(similarities, params.texts.size(), sorted_scores, indices);
-
-  std::vector<std::pair<std::string, float>> results;
-  for (int i = 0; i < params.texts.size(); i++)
-  {
-    auto label = params.texts[indices[i]];
-    float score = sorted_scores[i];
-    std::pair<std::string, float> result(label, score);
-    results.push_back(result);
-  }
-
-  return results;
+  return probs;
 }
 
-bool ImagePredictor::clip_image_load_from_mat(const cv::Mat &image, clip_image_u8 &img)
+bool ImagePredictor::cv_image_to_tensor(cv::Mat &image, torch::Tensor &tensor)
 {
-  if (image.empty())
+  try
   {
-    fprintf(stderr, "%s: empty input image\n", __func__);
+    image.convertTo(image, CV_32F, 1.0 / 255.0);
+    cv::Scalar mean_val(0.485, 0.456, 0.406);
+    cv::Scalar std_val(0.229, 0.224, 0.225);
+    cv::subtract(image, mean_val, image);
+    cv::divide(image, std_val, image);
+
+    // Transpose the image to match the PyTorch tensor format (C, H, W)
+    cv::transpose(image, image);
+
+    // Create a tensor from the transposed image
+    tensor = torch::from_blob(image.data, {1, image.rows, image.cols, image.channels()}, torch::kFloat32);
+    tensor = tensor.permute({0, 3, 1, 2});
+
+    return true;
+  }
+  catch (...)
+  {
     return false;
   }
-
-  int nx = image.cols;
-  int ny = image.rows;
-
-  img.nx = nx;
-  img.ny = ny;
-  img.data.resize(nx * ny * 3);
-
-  // Assuming the input image is BGR (3 channels)
-  int numChannels = image.channels();
-  int imageSize = nx * ny * numChannels;
-
-  if (numChannels == 3)
-  {
-    memcpy(img.data.data(), image.data, imageSize);
-  }
-  else if (numChannels == 1)
-  {
-    // Convert single-channel image to 3 channels
-    cv::Mat bgrImage;
-    cv::cvtColor(image, bgrImage, cv::COLOR_GRAY2BGR);
-    memcpy(img.data.data(), bgrImage.data, imageSize);
-  }
-  else
-  {
-    fprintf(stderr, "%s: unsupported number of channels in the input image\n", __func__);
-    return false;
-  }
-
-  return true;
 }
 
-bool ImagePredictor::modify_labels(const std::vector<std::string> &labels)
+void ImagePredictor::preprocessImage(const cv::Mat &input, cv::Mat &output)
 {
-  try {
-    for (int i = 0; i < labels.size(); i++)
-    {
-      params.texts[i] = labels[i];
-    }
-    // Eliminating old values
-    params.texts.erase(params.texts.begin() + labels.size(), params.texts.end());
-  } catch (const std::exception& e) {
-    std::cerr << e.what() << '\n';
-    return false;
+  cv::cvtColor(input, output, cv::COLOR_BGR2RGB);
+
+  // Resize the image to the desired size
+  cv::Size desiredSize(224, 224);
+  cv::resize(output, output, desiredSize);
+}
+
+std::vector<std::string> ImagePredictor::get_all_labels() {
+  return this->labels;
+}
+
+std::string ImagePredictor::get_label(int index) {
+  if (index < 0 || index >= this->labels.size()) {
+    printf("Index %d out of bound [%d,%d]\n", index, 0, this->labels.size());
+    return "None";
   }
-  return true;
+  return this->labels[index];
 }

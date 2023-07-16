@@ -3,10 +3,8 @@
 
 #include <string>
 #include <vector>
-#include <utility>
 #include <opencv2/core.hpp>
-#include "clip.h"
-#include "examples/common-clip.h"
+#include <torch/script.h>
 
 class ImagePredictor
 {
@@ -26,29 +24,55 @@ public:
   /**
    * @brief Predict the image classes
    * @param image The image to predict
-   * @return a vector of pairs of class name and confidence ordered by the confidence descending
+   * @return a vector of doubles, each position is the predicted value of the class
   */
-  std::vector<std::pair<std::string, float>> predict(const cv::Mat &image);
-
+  std::vector<double> predict(const cv::Mat &image);
 
   /**
-   * @brief Modify the labels of the model
-   * @param labels The new labels
-   * @return true if the labels were modified successfully, false otherwise
+   * @brief Returns the label given the index in the list
+   * @param index The index to access
+   * @return The label of the associated class
   */
-  bool modify_labels(const std::vector<std::string> &labels);
+  std::string get_label(int index);
 
+  /**
+   * @brief Returns the whole array of labels
+   * @return The list of all labels correctly ordered
+  */
+  std::vector<std::string> get_all_labels();
 private:
   /**
    * @brief A helper function to load an image from a cv::Mat object
    * @param image The image to load
-   * @param img The output image, suitable for the model
+   * @param tensor The output where to save the new representation
    * @return true if the image was loaded successfully, false otherwise
   */
-  bool clip_image_load_from_mat(const cv::Mat &image, clip_image_u8 &img);
+  bool cv_image_to_tensor(cv::Mat &image, torch::Tensor &tensor);
 
-  app_params params; // params needed for the model instantiation
-  clip_ctx *ctx; // actual model holder
+  /**
+   * @brief A helper function to preprocess images accordingly to resnet
+   * @param input The input image
+   * @param ouput The output image
+  */
+  void preprocessImage(const cv::Mat &input, cv::Mat &output);
+
+  torch::jit::script::Module model; // The model
+
+  std::vector<std::string> labels = {
+    "pasta_with_pesto",
+    "pasta_with_tomato_sauce",
+    "pasta_with_meat_sauce",
+    "pasta_with_clams_and_mussels",
+    "pilaw_rice_with_peppers_and_peas",
+    "grilled_pork_cutlet",
+    "fish_cutlet",
+    "rabbit",
+    "seafood_salad",
+    "beans",
+    "basil_potatoes",
+    "salad",
+    "bread"
+  }; // The labels correctly ordered
 };
 
 #endif // IMAGE_PREDICTOR_H

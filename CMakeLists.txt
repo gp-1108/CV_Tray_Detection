@@ -15,6 +15,7 @@ find_package(OpenCV 4 REQUIRED)
 find_package(Torch REQUIRED)
 
 add_subdirectory(src)
+add_subdirectory(tests)
 
 # Copying the model to the build directory
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/model.pth DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

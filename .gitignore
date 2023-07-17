@@ -2,3 +2,4 @@
 /YOLO
 /Dataset_cv_test
 .vscode
+/libtorch

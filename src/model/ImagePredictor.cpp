@@ -99,7 +99,7 @@ std::vector<std::string> ImagePredictor::get_all_labels() {
 
 std::string ImagePredictor::get_label(int index) {
   if (index < 0 || index >= this->labels.size()) {
-    printf("Index %d out of bound [%d,%d]\n", index, 0, this->labels.size());
+    printf("Index %d out of bound [%d,%lu]\n", index, 0, this->labels.size());
     return "None";
   }
   return this->labels[index];

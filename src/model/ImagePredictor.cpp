@@ -19,7 +19,7 @@ ImagePredictor::ImagePredictor(const std::string &modelPath)
 
 ImagePredictor::~ImagePredictor()
 {
-  // Destructor
+  // No actions needed
 }
 
 std::vector<double> ImagePredictor::predict(const cv::Mat &image)
@@ -56,9 +56,13 @@ std::vector<double> ImagePredictor::predict(const cv::Mat &image)
 
 bool ImagePredictor::cv_image_to_tensor(cv::Mat &image, torch::Tensor &tensor)
 {
+  // Given an image 224x224x3 in the range [0, 255], the following code
+  // will convert it to a PyTorch tensor of shape 1x3x224x224
+  // accordingly to the format expected by the model
   try
   {
     image.convertTo(image, CV_32F, 1.0 / 255.0);
+    // mean and std are specified in the PyTorch documentation
     cv::Scalar mean_val(0.485, 0.456, 0.406);
     cv::Scalar std_val(0.229, 0.224, 0.225);
     cv::subtract(image, mean_val, image);
@@ -81,10 +85,11 @@ bool ImagePredictor::cv_image_to_tensor(cv::Mat &image, torch::Tensor &tensor)
 
 void ImagePredictor::preprocessImage(const cv::Mat &input, cv::Mat &output)
 {
+  // The image needs to be converted from BGR to RGB
   cv::cvtColor(input, output, cv::COLOR_BGR2RGB);
 
   // Resize the image to the desired size
-  cv::Size desiredSize(224, 224);
+  cv::Size desiredSize(224, 224); // 224 is the size expected by the model
   cv::resize(output, output, desiredSize);
 }
 

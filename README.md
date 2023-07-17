@@ -21,23 +21,27 @@ For LibTorch download the zip file from [here](https://pytorch.org/get-started/l
 <br/><br/>
 <strong> !!! ATTENTION !!! </strong>
 <br/>
-The project is build with the ```cxx11 ABI``` and is meant to be run on the CPU.
+The project is built with the ```cxx11 ABI``` and is meant to be run on the CPU.
 Make sure to download the correct version of LibTorch. Look at the image below for reference.
 ![libtorch instructions](readme_images/libtorch.png "libtorch instructions")
 
 Once you have extracted your zip file you should have a folder named ```libtorch```.
-Go to the topmost CMakeLists.txt file and change the path to the LibTorch folder.
-```bash
-# other stuff ...
-set(CMAKE_PREFIX_PATH <new_path_to_libtorch_folder>) # Change path accordingly
-# other stuff ...
-```
+Now you have two options:
+1. Copy the folder in the project root directory
+2. Specify the path to the folder while building the project (see build section)
 
 ## Building
-To build the project use the following commands:
+If you have moved the libtorch folder in the project root directory use the following commands:
 ```bash
 mkdir build && cd build
 cmake ..
+cmake --build .
+```
+
+Otherise if you have moved the libtorch folder somewhere else use the following commands:
+```bash
+mkdir build && cd build
+cmake -DCMAKE_PREFIX_PATH=<path_to_libtorch> ..
 cmake --build .
 ```
 

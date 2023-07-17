@@ -6,8 +6,10 @@ project(CV_Project_Tray_Detection
   LANGUAGES CXX
 )
 
-# Rembember to download di abicxx11
-set(CMAKE_PREFIX_PATH /home/pietro/Downloads/libtorch) # Change path accordingly
+# Rembember to download the abicxx11
+if(NOT DEFINED CMAKE_PREFIX_PATH)
+  set(CMAKE_PREFIX_PATH /libtorch) # Change path accordingly
+endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
 

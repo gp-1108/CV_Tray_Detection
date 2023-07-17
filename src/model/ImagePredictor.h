@@ -43,7 +43,7 @@ public:
 private:
   /**
    * @brief A helper function to load an image from a cv::Mat object
-   * @param image The image to load
+   * @param image The image to load, formatted RGB 224x224
    * @param tensor The output where to save the new representation
    * @return true if the image was loaded successfully, false otherwise
   */
@@ -51,8 +51,8 @@ private:
 
   /**
    * @brief A helper function to preprocess images accordingly to resnet
-   * @param input The input image
-   * @param ouput The output image
+   * @param input The input image in BGR format
+   * @param ouput The output image in RGB format, resized to 224x224
   */
   void preprocessImage(const cv::Mat &input, cv::Mat &output);
 

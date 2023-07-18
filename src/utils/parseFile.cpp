@@ -2,13 +2,13 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <iostream>
 
 void parseFile(const std::string& filename, std::vector<std::vector<int>>& scalars) {
   std::ifstream inputFile(filename);
   
   if (!inputFile) {
-    std::cout << "Failed to open the file." << std::endl;
-    return 1;
+    std::cout << "Failed to open the file." << std::endl; //TODO sistemare il return
   }
   
   std::string line;

@@ -4,8 +4,9 @@
 #include <vector>
 #include <opencv2/opencv.hpp>
 
-#include "util/parseFile.h"
+#include "utils/parseFile.h"
 #include "model/ImagePredictor.h"
+#include "dish_detector/dish_detector.h"
 
 int main(int argc, char* argv[])
 {
@@ -22,29 +23,25 @@ int main(int argc, char* argv[])
   // These are the masks and bounding boxes read from the files provided by the professor
   cv::Mat refFullTrayMask;
   cv::Mat refEmptyTrayMask;
-  cv::Vector<vector<int>> refFullTrayBoundingBoxFile; // each scalar is a bounding box, structure: [x, y, width, height, categoryID]
-  cv::Vector<vector<int>> refEmptyTrayBoundingBoxFile; // each scalar is a bounding box, structure: [x, y, width, height, categoryID]
+  std::vector<std::vector<int>> refFullTrayBoundingBoxFile; // each scalar is a bounding box, structure: [x, y, width, height, categoryID]
+  std::vector<std::vector<int>> refEmptyTrayBoundingBoxFile; // each scalar is a bounding box, structure: [x, y, width, height, categoryID]
 
   // These are the final masks and bounding boxes computed by the algorithm 
-  cv::Mat cmpFullTrayMask = cv::Mat::zeros(fullTray.size(), CV_8UC1);
-  cv::Mat cmpEmptyTrayMask = cv::Mat::zeros(emptyTray.size(), CV_8UC1);
-  cv::Vector<vector<int>> cmpFullTrayBoundingBoxFile; // each scalar is a bounding box, structure: [x, y, width, height, categoryID]
-  cv::Vector<vector<int>> cmpEmptyTrayBoundingBoxFile; // each scalar is a bounding box, structure: [x, y, width, height, categoryID]
+  cv::Mat cmpFullTrayMask;
+  cv::Mat cmpEmptyTrayMask;
+  std::vector<std::vector<int>> cmpFullTrayBoundingBoxFile; // each scalar is a bounding box, structure: [x, y, width, height, categoryID]
+  std::vector<std::vector<int>> cmpEmptyTrayBoundingBoxFile; // each scalar is a bounding box, structure: [x, y, width, height, categoryID]
 
   if (argc < 4) {
     std::cout << "Usage: ./program_name before_tray.jpg after_tray.jpg" << std::endl;
     std::cout << "or" << std::endl;
     std::cout << "Usage: ./program_name before_tray.jpg after_tray.jpg before_mask.jpg after_mask.jpg before_tray_bounding_box.txt after_tray_bounding_box.txt" << std::endl;
     return 1; // Return error code
-  }
-
-  if (argc = 4) {
+  } else if (argc = 4) {
     std::cout << "### You are running the script WITHOUT performances computation ###" << std::endl;
     std::cout << "### If you want to run the script WITH performances computation, please run the script with the following command: ###" << std::endl;
     std::cout << "### ./program_name before_tray.jpg after_tray.jpg before_mask.jpg after_mask.jpg before_tray_bounding_box.txt after_tray_bounding_box.txt" << std::endl;
-  }
-  
-  if (argc = 8) {
+  } else if (argc = 8) {
     std::cout << "### You are running the script WITH performances computation ###" << std::endl;
     computePerformances = true;
   }
@@ -88,24 +85,33 @@ int main(int argc, char* argv[])
     }
 
     // Read the first bounding box
-    parseFile(argv[6], &refFullTrayBoundingBoxFile);
+    parseFile(argv[6], refFullTrayBoundingBoxFile);
 
     // Read the second bounding box
-    parseFile(argv[7], &refEmptyTrayBoundingBoxFile);
+    parseFile(argv[7], refEmptyTrayBoundingBoxFile);
 
   }
+
+  // Initialize the masks
+  cmpFullTrayMask = cv::Mat::zeros(fullTray.size(), CV_8UC1);
+  cmpEmptyTrayMask = cv::Mat::zeros(emptyTray.size(), CV_8UC1);
 
 
   // ALGORITHM APPLIED TO THE FIRST TRAY
 
   // First course and second course detection
-  // TODO
-  // dishDetector(&fullTrayCopy, &cmpFullTrayMask, &cmpFullTrayBoundingBoxFile, &predictor);
+  dishDetector(fullTrayCopy, cmpFullTrayMask, cmpFullTrayBoundingBoxFile, predictor);
+
+  //cv::imshow("Full tray", fullTrayCopy);
+  //cv::imshow("Full tray mask", cmpFullTrayMask);
+  //cv::waitKey(0);
+  //for (int i = 0; i < cmpFullTrayBoundingBoxFile.size(); i++) {
+  //  std::cout << "Full tray bounding box " << i << ": " << cmpFullTrayBoundingBoxFile[i][0] << " " << cmpFullTrayBoundingBoxFile[i][1] << " " << cmpFullTrayBoundingBoxFile[i][2] << " " << cmpFullTrayBoundingBoxFile[i][3] << " " << cmpFullTrayBoundingBoxFile[i][4] << std::endl;
+  //}
 
   // saladDetector
 
   // breadDetector
-
 
   // ALGORITHM APPLIED TO THE SECOND TRAY
 

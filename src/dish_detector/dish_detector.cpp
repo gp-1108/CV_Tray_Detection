@@ -9,7 +9,7 @@ the dish inside
 
 */
 
-void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_mask, std::vector<std::vector<int>> bb, ImagePredictor& predictor){
+void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_mask, std::vector<std::vector<int>>& bb, ImagePredictor& predictor){
 
   std::map<std::string, int> categories = { //TODO perchè non posso mettere const???
     {"Background", 0},
@@ -93,21 +93,17 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
     }
   }
 
-
   std::vector<double> result = predictor.predict(output);
 
-  int max_confidence = 0;
+  double max_confidence = 0;
   int max_index = 0;
 
   for(int i = 0; i < result.size(); i++){
     if(result[i] > max_confidence){
+      max_confidence = result[i];
       max_index = i;
     }
   }
-
-  std::string label = predictor.get_label(max_index);
-
-  int ID = categories[label];
 
   for (int i = 0; i < markers.rows; i++){
     for (int j = 0; j < markers.cols; j++){
@@ -116,14 +112,14 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
 
       if(index == 255){
         dst.at<uchar>(i,j) = 255;
-        cmp_tray_mask.at<uchar>(top_left.y + i, top_left.x + j) = ID;
+        cmp_tray_mask.at<uchar>(top_left.y + i, top_left.x + j) = max_index + 1;
       }
     }
   }
 
   cv::Rect bounding_box = boundingRect(dst);
 
-  std::vector<int> value = {top_left.x + bounding_box.x, top_left.y + bounding_box.y, bounding_box.width, bounding_box.height, ID};
+  std::vector<int> value = {top_left.x + bounding_box.x, top_left.y + bounding_box.y, bounding_box.width, bounding_box.height, max_index + 1};
 
   bb.push_back(value);
 }

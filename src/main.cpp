@@ -102,22 +102,15 @@ int main(int argc, char* argv[])
   // First course and second course detection
   dishDetector(fullTrayCopy, cmpFullTrayMask, cmpFullTrayBoundingBoxFile, predictor);
 
-  //cv::imshow("Full tray", fullTrayCopy);
-  //cv::imshow("Full tray mask", cmpFullTrayMask);
-  //cv::waitKey(0);
-  //for (int i = 0; i < cmpFullTrayBoundingBoxFile.size(); i++) {
-  //  std::cout << "Full tray bounding box " << i << ": " << cmpFullTrayBoundingBoxFile[i][0] << " " << cmpFullTrayBoundingBoxFile[i][1] << " " << cmpFullTrayBoundingBoxFile[i][2] << " " << cmpFullTrayBoundingBoxFile[i][3] << " " << cmpFullTrayBoundingBoxFile[i][4] << std::endl;
-  //}
-
   // saladDetector
 
   // breadDetector
 
+
   // ALGORITHM APPLIED TO THE SECOND TRAY
 
   // First course and second course detection
-  // TODO
-  // dishDetector
+  dishDetector(emptyTrayCopy, cmpEmptyTrayMask, cmpEmptyTrayBoundingBoxFile, predictor);
 
   // saladDetector
 

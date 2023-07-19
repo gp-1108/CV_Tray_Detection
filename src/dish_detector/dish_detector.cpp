@@ -9,7 +9,7 @@ the dish inside
 
 */
 
-void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_mask, std::vector<std::vector<int>>& bb, ImagePredictor& predictor){
+void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_mask, std::vector<std::vector<int>>& bb, ImagePredictor& predictor, std::vector<double>& confidenceVector){
 
   std::map<std::string, int> categories = { //TODO perchè non posso mettere const???
     {"Background", 0},
@@ -124,7 +124,7 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
   bb.push_back(value);
 }
 
-bool dishDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vector<int>>& bb, ImagePredictor& predictor){
+bool dishDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vector<int>>& bb, ImagePredictor& predictor, std::vector<double>& confidenceVector){
 
   cv::Mat img = tray.clone(); //copio originale 
 
@@ -189,7 +189,7 @@ bool dishDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vector
     bottom_right.x -= padding;
     bottom_right.y -= padding;
 
-    segment_dish(plate, top_left, cmp_tray_mask, bb, predictor);
+    segment_dish(plate, top_left, cmp_tray_mask, bb, predictor, confidenceVector);
   }
   return true;
 }

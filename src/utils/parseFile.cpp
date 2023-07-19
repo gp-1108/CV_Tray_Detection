@@ -16,31 +16,30 @@ void parseFile(const std::string& filename, std::vector<std::vector<int>>& scala
   while (std::getline(inputFile, line)) {
     std::stringstream ss(line);
     std::string idString, valuesString;
-    
+
     // Read the ID and values from the line
     std::getline(ss, idString, ';');
-    std::getline(ss, valuesString, '[');
-    valuesString.pop_back(); // Remove the trailing ']'
+    std::getline(ss, valuesString, ']');
     
+    // Remove the first 2 characters from valuesString (" [")
+    valuesString.erase(0, 2);
+
     std::vector<int> values;
     std::stringstream valuesStream(valuesString);
     std::string value;
-    
+    //std::getline(valuesStream, value, ',');
     while (std::getline(valuesStream, value, ',')) {
-        values.push_back(std::stoi(value));
+      valuesString.erase(0, value.size());
+      values.push_back(std::stoi(value));
     }
     
+    // Remove the first 4 characters from idString (they are "ID: ")
+    idString.erase(0, 4);
     int id = std::stoi(idString);
     
     // Add the ID as the last element of the values vector
     values.push_back(id);
-    
-    // Print the vector values
-    for (const auto& val : values) {
-        std::cout << val << " ";
-    }
-    
-    std::cout << std::endl;
+    scalars.push_back(values);
   }
   
   inputFile.close();

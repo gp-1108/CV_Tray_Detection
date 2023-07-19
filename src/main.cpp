@@ -146,7 +146,7 @@ int main(int argc, char* argv[])
 
 
   // COMPUTE PERFORMANCES
-  performances(cmpFullTrayMask, cmpEmptyTrayMask, refFullTrayMask, refEmptyTrayMask, cmpFullTrayBoundingBoxFile, cmpEmptyTrayBoundingBoxFile, refFullTrayBoundingBoxFile, refEmptyTrayBoundingBoxFile);
+  performances(cmpFullTrayMask, cmpEmptyTrayMask, refFullTrayMask, refEmptyTrayMask, cmpFullTrayBoundingBoxFile, cmpEmptyTrayBoundingBoxFile, refFullTrayBoundingBoxFile, refEmptyTrayBoundingBoxFile, cmpConfidenceFullTray, cmpConfidenceEmptyTray);
 
   return 0;
 }

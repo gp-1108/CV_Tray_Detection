@@ -45,7 +45,7 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
   
   cv::cvtColor(img, hsv_image, cv::COLOR_BGR2HSV); //converto
   
-  cv::inRange(hsv_image, cv::Scalar(0, 80, 60), cv::Scalar(180, 255, 255), sure_fg); //H = 0-180, S = 160-255, V = 60-255 per il cibo
+  cv::inRange(hsv_image, cv::Scalar(0, 100, 5), cv::Scalar(180, 255, 220), sure_fg); //H = 0-180, S = 160-255, V = 60-255 per il cibo
   
   cv::Mat dilation_elem = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7));
 

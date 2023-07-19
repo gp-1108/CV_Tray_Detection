@@ -39,6 +39,7 @@ bool saladDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vecto
       circle( tray, center, radius, cv::Scalar(0,0,0), -1, 8, 0 );
     }
 
+
     // if the pixels are not in none of the circles, set them to black
     for(int i = 0; i < tray.rows; i++) {
       for(int j = 0; j < tray.cols; j++) {
@@ -61,10 +62,25 @@ bool saladDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vecto
     cv::Point top_left;
     std::vector<cv::Mat> boundRect(circles.size());
     for (int i = 0; i < circles.size(); i++) {
+
       cv::Point center(cvRound(circles[i][0]), cvRound(circles[i][1]));
       int radius = cvRound(circles[i][2]);
-      boundRect[i] = img(cv::Rect(center.x - radius, center.y - radius, radius * 2, radius * 2));
+
+      int padding = 400;
+      // check if the detected circle goes out of the image
+      if(center.x + radius > img.cols || center.y + radius > img.rows || center.x - radius < 0 || center.y - radius < 0) {
+        // add margin to the image if the circle is too close to the border
+        cv::Mat imgPadding = img.clone();
+        cv::copyMakeBorder(imgPadding, imgPadding, padding, padding, padding, padding, cv::BORDER_CONSTANT, cv::Scalar(0, 0, 0));
+        center.x += padding;
+        center.y += padding;
+        boundRect[i] = imgPadding(cv::Rect(center.x - radius, center.y - radius, radius * 2, radius * 2));
+      } else {
+        boundRect[i] = img(cv::Rect(center.x - radius, center.y - radius, radius * 2, radius * 2));
+      }
+
       top_left = cv::Point(center.x - radius, center.y - radius);
+    
     }
 
     if(boundRect.size() == 0) {
@@ -90,6 +106,7 @@ bool saladDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vecto
         }
       }
     }
+
 
     // Apply morphological oeprator to remove/reduce little patches of colour
     cv::Mat kernel = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));

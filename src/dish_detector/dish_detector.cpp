@@ -28,6 +28,7 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
     {"bread", 13}
   };
 
+
   cv::Mat img = plate.clone(); //copia dell'originale
   cv::Mat untouched = plate.clone();
   cv::Mat mask = img.clone();
@@ -81,6 +82,7 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
 
   cv::Mat dst = cv::Mat::zeros(markers.size(), CV_8UC1);
   cv::Mat output(markers.size(), CV_8UC3, cv::Scalar(255,255,255));
+  std::cout << "HERE" << std::-endl;
   
   for (int i = 0; i < markers.rows; i++){
     for (int j = 0; j < markers.cols; j++){
@@ -92,6 +94,7 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
       }
     }
   }
+
 
   std::vector<double> result = predictor.predict(output);
 

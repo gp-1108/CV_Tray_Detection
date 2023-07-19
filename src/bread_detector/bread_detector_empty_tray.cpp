@@ -107,8 +107,8 @@ bool breadDetectorEmptyTray(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<s
 
   // We apply the predictor in order to extract the bounding box which has more chances to be the bread
   // Find contours in mask
-  contours.clear();
-  hierarchy.clear();
+  contours.erase(contours.begin(), contours.end());
+  hierarchy.erase(hierarchy.begin(), hierarchy.end());
   cv::findContours(mask, contours, hierarchy, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE, cv::Point(0, 0));
   
   int indexWithMaxConfidence = 0;

@@ -4,7 +4,7 @@
 #include <opencv2/core/core.hpp>
 #include <vector>
 
-std::vector<double> leftover(cv::Mat& cmpFullTrayMask, cv::Mat& cmpEmptyTrayMask);
+std::vector<double> leftover_estimator(cv::Mat& cmpFullTrayMask, cv::Mat& cmpEmptyTrayMask);
 double segmentation_estimator(std::vector<std::vector<int>>& cmpFullTrayBoundingBoxFile, 
                               std::vector<std::vector<int>>& refFullTrayBoundingBoxFile);
 double IoU(std::vector<int>& cmpBoundingBox, std::vector<int>& refBoundingBox);

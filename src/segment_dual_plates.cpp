@@ -2,11 +2,12 @@
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <numeric>
+#include <fstream>
 
 cv::Mat create_feature_matrix(const cv::Mat &image)
 {
   // Create a matrix to store the combined feature vectors [x, y, r, g, b]
-  cv::Mat featureMatrix(image.rows * image.cols, 5, CV_32F);
+  cv::Mat featureMatrix(image.rows * image.cols, 3, CV_32F);
 
   // Fill the feature matrix with pixel positions and color values
   for (int y = 0; y < image.rows; y++)
@@ -20,8 +21,12 @@ cv::Mat create_feature_matrix(const cv::Mat &image)
       featureMatrix.at<float>(y * image.cols + x, 1) = (y / image.rows);
       featureMatrix.at<float>(y * image.cols + x, 2) = pixel[2] / 255.0; // Red value
       featureMatrix.at<float>(y * image.cols + x, 3) = pixel[1] / 255.0; // Green value
-      // featureMatrix.at<float>(y * image.cols + x, 4) = pixel[0] / 255.0; // Blue value
-      featureMatrix.at<float>(y * image.cols + x, 4) = 0; // Blue value
+      featureMatrix.at<float>(y * image.cols + x, 4) = pixel[0] / 255.0; // Blue value
+      // featureMatrix.at<float>(y * image.cols + x, 2) = pixel[2] / (pixel[1] + 1);
+      // featureMatrix.at<float>(y * image.cols + x, 3) = pixel[1] / (pixel[0] + 1);
+      // featureMatrix.at<float>(y * image.cols + x, 4) = pixel[1] / (pixel[0] + 1);
+
+      // featureMatrix.at<float>(y * image.cols + x, 4) = 0; // Blue value
     }
   }
 
@@ -42,147 +47,6 @@ cv::Mat watershed_seg(const cv::Mat &image, const std::vector<std::vector<cv::Po
   cv::watershed(image, markers);
 
   return markers;
-}
-
-std::pair<double, int> compute_distance(int x_curr, int y_curr, const cv::Mat &mask, int label, const cv::Mat &image)
-{
-  // Compute sum of all distances between the current pixel and all other pixels in
-  // the cluster specified by the label
-  double sum = 0;
-  int count = 0;
-  for (int x = 0; x < mask.cols; x++)
-  {
-    for (int y = 0; y < mask.rows; y++)
-    {
-      if (mask.at<int>(y, x) == label)
-      {
-        sum += sqrt(pow(x_curr - x, 2) + pow(y_curr - y, 2));
-        count++;
-      }
-    }
-  }
-
-  std::pair result(sum, count);
-  return result;
-}
-
-double std_dev(std::vector<double> &vec)
-{
-  double sum = 0;
-  for (double val : vec)
-  {
-    sum += val;
-  }
-  double mean = sum / vec.size();
-
-  double sum_sq = 0;
-  for (double val : vec)
-  {
-    sum_sq += pow(val - mean, 2);
-  }
-  double variance = sum_sq / vec.size();
-
-  return sqrt(variance);
-}
-
-double color_std(const cv::Mat &mask, const cv::Mat &image)
-{
-  std::vector<int> uniqueLabels;
-  for (int x = 0; x < mask.cols; x++)
-  {
-    for (int y = 0; y < mask.rows; y++)
-    {
-      int label = mask.at<int>(y, x);
-      if (std::find(uniqueLabels.begin(), uniqueLabels.end(), label) == uniqueLabels.end())
-      {
-        uniqueLabels.push_back(label);
-      }
-    }
-  }
-
-  // Computing the std for r,g,b values for each cluster
-  std::vector<double> stds;
-  for (int label : uniqueLabels)
-  {
-    std::vector<double> r_values;
-    std::vector<double> g_values;
-    std::vector<double> b_values;
-    for (int x = 0; x < mask.cols; x++)
-    {
-      for (int y = 0; y < mask.rows; y++)
-      {
-        if (mask.at<int>(y, x) == label)
-        {
-          cv::Vec3b pixel = image.at<cv::Vec3b>(y, x);
-          r_values.push_back(pixel[2]);
-          g_values.push_back(pixel[1]);
-          b_values.push_back(pixel[0]);
-        }
-      }
-    }
-    double r_std = std_dev(r_values);
-    double g_std = std_dev(g_values);
-    double b_std = std_dev(b_values);
-
-    stds.push_back((r_std + g_std + b_std) / 3.0);
-  }
-
-  double mean_std = 0;
-  for (double std : stds)
-  {
-    mean_std += std;
-  }
-  mean_std /= stds.size();
-
-  return mean_std;
-}
-
-double pos_std(const cv::Mat &mask)
-{
-  std::vector<int> uniqueLabels;
-  for (int x = 0; x < mask.cols; x++)
-  {
-    for (int y = 0; y < mask.rows; y++)
-    {
-      int label = mask.at<int>(y, x);
-      if (std::find(uniqueLabels.begin(), uniqueLabels.end(), label) == uniqueLabels.end())
-      {
-        uniqueLabels.push_back(label);
-      }
-    }
-  }
-
-  // Computing the std for r,g,b values for each cluster
-  std::vector<double> stds;
-  for (int label : uniqueLabels)
-  {
-    std::vector<double> x_values;
-    std::vector<double> y_values;
-    for (int x = 0; x < mask.cols; x++)
-    {
-      for (int y = 0; y < mask.rows; y++)
-      {
-        if (mask.at<int>(y, x) == label)
-        {
-          x_values.push_back(x);
-          y_values.push_back(y);
-        }
-      }
-    }
-    double x_std = std_dev(x_values);
-    double y_std = std_dev(y_values);
-
-    stds.push_back((x_std + y_std) / 2.0);
-  }
-
-  double mean_std = 0;
-  for (double std : stds)
-  {
-    mean_std += std;
-  }
-  mean_std /= stds.size();
-
-  return mean_std;
 }
 
 std::vector<std::vector<cv::Point>> find_seed_points(const cv::Mat &image, int numClusters)
@@ -389,10 +253,10 @@ double calculateSampledSilhouette(const cv::Mat &data, const cv::Mat &labels, in
   return meanSilhouette;
 }
 
-int main(int argc, char **argv)
+int get_clust_num(std::string image_path)
 {
   // Load the image
-  cv::Mat image = cv::imread(argv[1], cv::IMREAD_COLOR);
+  cv::Mat image = cv::imread(image_path, cv::IMREAD_COLOR);
 
   // Check if the image was loaded successfully
   if (image.empty())
@@ -403,9 +267,6 @@ int main(int argc, char **argv)
 
   cv::Mat image_copy = image.clone();
 
-  cv::imshow("Original Image", image);
-  cv::waitKey(0);
-  cv::destroyAllWindows();
 
   // Gaussian Parameters
   int kernel_size = 9;
@@ -419,50 +280,110 @@ int main(int argc, char **argv)
   }
 
   std::vector<double> silhouetteScores;
+  std::vector<cv::Mat> segmentations;
+
+  // Apply average filter to original image twice
+  cv::Mat avg_image(image_copy.rows, image_copy.cols, CV_8UC3);
+  image_copy.copyTo(avg_image);
+  for (int i = 0; i < 4; i++)
+  {
+    cv::blur(avg_image, avg_image, cv::Size(7, 7));
+  }
+
   for (int numClusters = 2; numClusters <= 4; numClusters++)
   {
-    printf("Number of clusters: %d\n", numClusters);
 
     std::vector<std::vector<cv::Point>> seedPoints = find_seed_points(image, numClusters);
 
-    cv::Mat segmentation = watershed_seg(image_copy, seedPoints);
+
+
+    cv::Mat segmentation = watershed_seg(avg_image, seedPoints);
+    segmentations.push_back(segmentation);
     cv::Mat featureMatrix = create_feature_matrix(image_copy);
     // Computing the sampled_sihouette score
     double mean_silhouette = 0;
     for (int i = 0; i < 5; i++) {
-      printf("Iteration: %d for %d clusters\n", i, numClusters);
-      double silhouetteScore = calculateSampledSilhouette(featureMatrix, segmentation, 450);
+      double silhouetteScore = calculateSampledSilhouette(featureMatrix, segmentation, 350);
       mean_silhouette += silhouetteScore;
     }
     mean_silhouette /= 5;
-    printf("Silhouette Score: %f\n", mean_silhouette);
     silhouetteScores.push_back(mean_silhouette);
 
-    cv::Mat mask = create_mask(segmentation);
-
-    double alpha = 0.7;
-    cv::Mat segmented = alpha * image_copy + (1 - alpha) * mask;
-
-    // Displaying the segmented image
-    cv::imshow("Original Image", image_copy);
-    cv::imshow("Segmented", segmented);
-    cv::imshow("mask", mask);
-    cv::waitKey(0);
-    cv::destroyAllWindows();
   }
 
+  double score_per_cluster[] = {0.15, 0.10, 0.05}; //0.41
+  // double score_per_cluster[] = {0, 0 ,0}; 0.11
+  // double score_per_cluster[] = {0.1, 0.2, 0.0}; 0.33
   double max_score = 0;
   int max_index = 0;
   for (int i = 0; i < silhouetteScores.size(); i++)
   {
-    if (silhouetteScores[i] > max_score)
+    double new_score = score_per_cluster[i] + silhouetteScores[i];
+    if (new_score > max_score)
     {
-      max_score = silhouetteScores[i];
+      max_score = new_score;
       max_index = i;
     }
   }
-  printf("Best number of clusters: %d\n", max_index + 2);
-  printf("Number of foods: %d\n", max_index + 1);
+
+  cv::Mat segmentation = segmentations[max_index];
+  cv::Mat mask = create_mask(segmentation);
+
+
+
+  double alpha = 0.6;
+  cv::Mat segmented = alpha * image_copy + (1 - alpha) * mask;
+
+  // Saving the segmented image
+  std::string subfolder = image_path.substr(0, image_path.find_last_of("/"));
+  std::string filename = image_path.substr(image_path.find_last_of("/") + 1, image_path.length());
+  std::string ouput_path = subfolder + "/segmented/" + filename;
+  cv::imwrite(ouput_path, segmented);
+
+
+  return max_index + 1;
+}
+
+int main(int argc, char** argv) {
+  std::string folder_path = argv[1];
+  printf("Processing folder %s\n", folder_path.c_str());
+
+  std::vector<std::pair<std::string, int>> images;
+  // Open file true_clusters.txt
+  std::string line;
+  std::ifstream myfile(folder_path + "/true_clusters.txt");
+
+  if (myfile.is_open())
+  {
+    while (getline(myfile, line))
+    {
+      // Each line is <image_path>,<num_foods>
+      std::string delimiter = ",";
+      std::string image_path = line.substr(0, line.find(delimiter));
+      int num_foods = std::stoi(line.substr(line.find(delimiter) + 1, line.length()));
+      images.push_back(std::make_pair(image_path, num_foods));
+    }
+    myfile.close();
+  }
+  else
+  {
+    std::cout << "Unable to open file";
+  }
+
+  double correct = 0;
+  double total = 0;
+  for (auto &image : images) {
+    printf("Processing %s\n", image.first.c_str());
+    std::string image_path = image.first;
+    int num_foods = image.second;
+    int num_clusters = get_clust_num(folder_path + "/" + image_path);
+    if (num_clusters == num_foods) {
+      correct++;
+    }
+    total++;
+  }
+
+  printf("Accuracy: %f\n", correct / total);
 
   return 0;
 }

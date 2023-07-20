@@ -98,9 +98,9 @@ void datasetExecution(std::string& pathToDataset, ImagePredictor& predictor) {
 
       // Save the leftover estimation
       std::ofstream resultsFile;
-      resultsFile.open("../results/resultsLeftoverEstimation.txt");
+      resultsFile.open("../results/tray" + std::to_string(i) + "/leftover" + std::to_string(j) + "Estimation.txt");
       for(int k = 0; k < leftover_estimation.size(); k++) {
-        resultsFile << "Tray " << i << ", Leftover " << j << ", estimation: " << leftover_estimation[i] << std::endl;
+        resultsFile << "Tray " << i << ", Leftover " << j << ", estimation: " << std::to_string(leftover_estimation[i]) << std::endl;
       }
       resultsFile.close();
 
@@ -108,7 +108,7 @@ void datasetExecution(std::string& pathToDataset, ImagePredictor& predictor) {
       refSingleEmptyTrayBoundingBoxFile.erase(refSingleEmptyTrayBoundingBoxFile.begin(), refSingleEmptyTrayBoundingBoxFile.end());
 
       // Save the masks computed
-      cv::imwrite("../results/masks/tray" + std::to_string(i) + "/masks/leftover" + std::to_string(j) + "_mask.png", cmpEmptyTrayMask);
+      cv::imwrite("../results/tray" + std::to_string(i) + "/masks/leftover" + std::to_string(j) + "_mask.png", cmpEmptyTrayMask);
 
     }
 
@@ -123,26 +123,32 @@ void datasetExecution(std::string& pathToDataset, ImagePredictor& predictor) {
   // Compute the final results
   double map = localization_estimator(refTotalTrayBoundingBoxFiles, cmpTotalTrayBoundingBoxFiles);
 
+  double mIoU = segmentation_estimator(cmpSingleFullTrayBoundingBoxFile, cmpSingleEmptyTrayBoundingBoxFile);
+
   // Save the bounding boxes computed in a txt, each row "ID: categoryID; [x, y, width, height]"
   std::ofstream stream;
   for(int i = 0; i < cmpTotalTrayBoundingBoxFiles.size(); i++) {
     for(int j = 0; j < cmpTotalTrayBoundingBoxFiles[i].size(); j++) {
-      for(int k = 0; k < cmpTotalTrayBoundingBoxFiles[i][j].size(); k++) {
-        if(j == 0)
-          stream.open("../results/tray" + std::to_string(i) + "/bouding_boxes/food_image_bounding_box.txt");
-        else
-          stream.open("../results/" + std::to_string(i) + "bouding_boxes/leftover" + std::to_string(j) + "_bounding_box.txt", std::ios_base::app);
-        stream.open("../results/bouding_boxes/resultsBoundingBoxes.txt");
-        stream << "ID: " << cmpTotalTrayBoundingBoxFiles[i][j][k][4] << "; [" << cmpTotalTrayBoundingBoxFiles[i][j][k][0] << ", " << cmpTotalTrayBoundingBoxFiles[i][j][k][1] << ", " << cmpTotalTrayBoundingBoxFiles[i][j][k][2] << ", " << cmpTotalTrayBoundingBoxFiles[i][j][k][3] << "]" << std::endl;
+      if(j == 0) {
+        stream.open("../results/tray" + std::to_string(i) + "/bounding_boxes/food_image_bounding_box.txt");
+      } else {
+        stream.open("../results/tray" + std::to_string(i) + "/bounding_boxes/leftover" + std::to_string(j+1) + "_bounding_box.txt");
       }
+      for(int k = 0; k < cmpTotalTrayBoundingBoxFiles[i][j].size(); k++) {
+        stream << "ID: " << cmpTotalTrayBoundingBoxFiles[i][j][k][4] << "; [" << cmpTotalTrayBoundingBoxFiles[i][j][k][0] << ", " << cmpTotalTrayBoundingBoxFiles[i][j][k][1] << ", " << cmpTotalTrayBoundingBoxFiles[i][j][k][2] << ", " << cmpTotalTrayBoundingBoxFiles[i][j][k][3] << "]\n" << std::endl;
+      }
+      stream.close();
     }
   }
-  stream.close();
 
-  // Save the MAP and the leftover in a file
+  // Save the MAP and the mIoU in a file
   std::ofstream resultsFile;
   resultsFile.open("../results/resultsMAP.txt");
   resultsFile << "MAP: " << map << std::endl;
+  resultsFile.close();
+
+  resultsFile.open("../results/resultsmIoU.txt");
+  resultsFile << "mIoU: " << mIoU << std::endl;
   resultsFile.close();
 
 }

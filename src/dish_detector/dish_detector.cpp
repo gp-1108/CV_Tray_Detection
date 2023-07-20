@@ -33,46 +33,71 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
   cv::Mat untouched = plate.clone();
   cv::Mat mask = img.clone();
 
-  cv::GaussianBlur(img, img, cv::Size(3,3), 1.5, 1.5);
+  cv::Mat edges;
+  cv::Canny(img, edges, 100, 70); //100 70
+
+  //print_image(edges, "Edges", 0);
+
+  cv::Mat labels;
+  cv::Mat stats;
+  cv::Mat centroids;
+  int nComps = cv::connectedComponentsWithStats(edges, labels, stats, centroids);
+
+  for(int i = 0; i < img.rows; i++){
+      for(int j = 0; j < img.cols; j++){
+          if(stats.at<int>(labels.at<int>(i,j), cv::CC_STAT_AREA) < 100){ //100
+              edges.at<uchar>(i,j) = 0;
+          }
+      }
+  }
 
   int point_x = img.rows / 2;
   int point_y = img.cols / 2;
 
   cv::Point image_center(point_x, point_y); //centro dell'immagine
 
-  cv::circle(mask, image_center, point_x - 0.28 * point_x, cv::Scalar(255,0,0), cv::FILLED); //disegno cerchio su maschera
+  cv::circle(mask, image_center, point_x - 0.3 * point_x, cv::Scalar(255,0,0), cv::FILLED); //disegno cerchio su maschera
 
-  cv::Mat hsv_image, sure_fg; //creo ciò che mi serve
-  
-  cv::cvtColor(img, hsv_image, cv::COLOR_BGR2HSV); //converto
-  
-  cv::inRange(hsv_image, cv::Scalar(0, 100, 5), cv::Scalar(180, 255, 220), sure_fg); //H = 0-180, S = 160-255, V = 60-255 per il cibo
-  
-  cv::Mat dilation_elem = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(7, 7));
+  cv::Mat dilation_elem = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));
+  cv::Mat dilation_elem_1 = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
 
   cv::Mat dilation;
-  cv::dilate(sure_fg, dilation, dilation_elem, cv::Point(-1, -1), 10);
+  cv::dilate(edges, edges, dilation_elem_1, cv::Point(-1, -1), 1);
+  cv::dilate(edges, dilation, dilation_elem, cv::Point(-1, -1), 15); //anche 16 è buono
 
-  cv::Mat not_sure = dilation - sure_fg;
+  cv::Mat not_sure = dilation - edges;
   
   cv::Mat mask_for_markers(img.size(), CV_8UC1, cv::Scalar(128)); //creo la maschera per i markers di Watershed
   
   for(int i = 0; i < img.rows; i++){ //riempio la maschera per diventare markers per Watershed
-    for(int j = 0; j < img.cols; j++){
-      if(sure_fg.at<uchar>(i,j) == 255 && mask.at<cv::Vec3b>(i,j) == cv::Vec3b(255,0,0)){ 
-        mask_for_markers.at<uchar>(i,j) = 255;
-      }
-      else if(sure_fg.at<uchar>(i,j) == 255 && mask.at<cv::Vec3b>(i,j) != cv::Vec3b(255,0,0)){
-        mask_for_markers.at<uchar>(i,j) = 0;
-      }
+      for(int j = 0; j < img.cols; j++){
 
-      if(not_sure.at<uchar>(i,j) == 255){ 
-        mask_for_markers.at<uchar>(i,j) = 0;
+          if(edges.at<uchar>(i,j) == 255 && mask.at<cv::Vec3b>(i,j) == cv::Vec3b(255,0,0)){ 
+              mask_for_markers.at<uchar>(i,j) = 255;
+          }
+          else if(edges.at<uchar>(i,j) == 255 && mask.at<cv::Vec3b>(i,j) != cv::Vec3b(255,0,0)){
+              mask_for_markers.at<uchar>(i,j) = 0;
+          }
+          if(not_sure.at<uchar>(i,j) == 255){ 
+              mask_for_markers.at<uchar>(i,j) = 0;
+          }
       }
-    }
   }
 
   //print_image(mask_for_markers, "Mask from color filter", 0);
+
+  labels;
+  stats;
+  centroids;
+  nComps = cv::connectedComponentsWithStats(mask_for_markers, labels, stats, centroids);
+
+  for(int i = 0; i < img.rows; i++){
+      for(int j = 0; j < img.cols; j++){
+          if(stats.at<int>(labels.at<int>(i,j), cv::CC_STAT_AREA) < 300){ //100
+              mask_for_markers.at<uchar>(i,j) = 0;
+          }
+      }
+  }
 
   cv::Mat markers;
 
@@ -80,19 +105,21 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
 
   cv::watershed(img, markers); //eseguo Watershed
 
+  cv::Mat markers_elab(markers.size(), CV_8UC1, cv::Scalar(0));
   cv::Mat dst = cv::Mat::zeros(markers.size(), CV_8UC1);
   cv::Mat output(markers.size(), CV_8UC3, cv::Scalar(255,255,255));
-  std::cout << "HERE" << std::-endl;
-  
-  for (int i = 0; i < markers.rows; i++){
-    for (int j = 0; j < markers.cols; j++){
 
-      int index = markers.at<int>(i,j);
-
-      if(index == 255){
-        output.at<cv::Vec3b>(i,j) = untouched.at<cv::Vec3b>(i,j);
+  for(int i = 0; i < markers.rows; i++){
+      for(int j = 0; j < markers.cols; j++){
+          
+          if(markers.at<int>(i,j) == 255){
+              markers_elab.at<uchar>(i,j) = 255;
+              output.at<cv::Vec3b>(i,j) = untouched.at<cv::Vec3b>(i,j);
+          }
+          else{
+              markers_elab.at<uchar>(i,j) = 0;
+          }
       }
-    }
   }
 
 
@@ -108,8 +135,8 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
     }
   }
 
-  for (int i = 0; i < markers.rows; i++){
-    for (int j = 0; j < markers.cols; j++){
+  for(int i = 0; i < markers.rows; i++){
+    for(int j = 0; j < markers.cols; j++){
 
       int index = markers.at<int>(i,j);
 

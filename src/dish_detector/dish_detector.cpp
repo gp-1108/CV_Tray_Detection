@@ -201,7 +201,9 @@ bool dishDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vector
       for(int j = 0; j < mask.cols; j++){
         if(mask.at<cv::Vec3b>(i,j) == cv::Vec3b(255,0,0)){
           to_be_cropped.at<cv::Vec3b>(i,j) = img.at<cv::Vec3b>(i,j);
-          tray.at<cv::Vec3b>(i - padding,j - padding) = cv::Vec3b(0,0,0); //elimino piatti dal vassoio originale
+          if(i - padding >= 0 && j - padding >= 0 && i - padding < tray.rows && j - padding < tray.cols) {
+            tray.at<cv::Vec3b>(i - padding,j - padding) = cv::Vec3b(0,0,0); //elimino piatti dal vassoio originale
+          }
         }
       }
     }

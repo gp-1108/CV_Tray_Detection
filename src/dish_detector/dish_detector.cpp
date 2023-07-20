@@ -225,3 +225,65 @@ bool dishDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vector
   }
   return true;
 }
+
+void search_template(const Mat& dish_template, Mat& search_image, Mat& output_mask){
+
+    Mat img_display, result;
+    search_image.copyTo(img_display);
+
+    int match_method = TM_SQDIFF;
+    int result_cols = search_image.cols - dish_template.cols + 1;
+    int result_rows = search_image.rows - dish_template.rows + 1;
+    result.create(result_rows, result_cols, CV_32FC1);
+    
+    matchTemplate(search_image, dish_template, result, match_method);
+
+    normalize(result, result, 0, 1, NORM_MINMAX, -1, Mat());
+
+    double minVal; 
+    double maxVal; 
+    Point minLoc; 
+    Point maxLoc;
+    Point matchLoc;
+
+    minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
+
+    matchLoc = minLoc;
+    
+    rectangle(img_display, matchLoc, Point(matchLoc.x + dish_template.cols , matchLoc.y + dish_template.rows), Scalar::all(0), 2, 8, 0);
+    rectangle(result, matchLoc, Point(matchLoc.x + dish_template.cols , matchLoc.y + dish_template.rows), Scalar::all(0), 2, 8, 0);
+
+    //Rect rect(matchLoc, Point(matchLoc.x + dish_template.cols , matchLoc.y + dish_template.rows));
+    
+    Mat mask_for_markers(search_image.size(), CV_8UC1, Scalar(128)); //creo la maschera per i markers di Watershed
+    
+    for(int i = 0; i < search_image.rows; i++){ //riempio la maschera per diventare markers per Watershed
+        for(int j = 0; j < search_image.cols; j++){
+
+            if(i > matchLoc.y && i < matchLoc.y + dish_template.rows && j > matchLoc.x && j < matchLoc.x + dish_template.cols && search_image.at<Vec3b>(i,j) != Vec3b(0,0,0)){ 
+                mask_for_markers.at<uchar>(i,j) = 255;
+            }
+            else{
+                mask_for_markers.at<uchar>(i,j) = 0;
+            }
+        }
+    }
+
+    Mat markers;
+
+    mask_for_markers.convertTo(markers, CV_32SC1); //converto la maschera in markers
+
+    watershed(search_image, markers); //eseguo Watershed
+
+    output_mask = Mat::zeros(markers.size(), CV_8UC3);
+    
+    for(int i = 0; i < markers.rows; i++){
+        for(int j = 0; j < markers.cols; j++){
+            if(markers.at<int>(i,j) == 255){
+                output_mask.at<uchar>(i,j) = 255;
+            }else{
+                output_mask.at<uchar>(i,j) = 128;
+            }
+        }
+    }
+}

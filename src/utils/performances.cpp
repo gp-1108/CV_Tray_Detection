@@ -88,23 +88,95 @@ double segmentation_estimator(std::vector<std::vector<int>>& cmpFullTrayBounding
 
 }
 
-double localization_estimator(std::vector<std::vector<int>>& cmpFullTrayBoundingBoxFile, std::vector<std::vector<int>>& refFullTrayBoundingBoxFile, std::vector<double>& cmpConfidenceFullTray) {
+double localization_estimator(const std::vector<std::vector<std::vector<std::vector<int>>>> refTotalTrayBoundingBoxFiles, const std::vector<std::vector<std::vector<std::vector<int>>>> cmpTotalTrayBoundingBoxFiles) {
 
-  std::vector<std::string> matches;
+  std::vector<double> average_precision(13);
 
-  for(int i = 0; i < cmpFullTrayBoundingBoxFile.size(); i++) {
-    for(int j = 0; j < refFullTrayBoundingBoxFile.size(); j++) {
-      // if the same category is localized in both trays
-      if(cmpFullTrayBoundingBoxFile[i][4] == refFullTrayBoundingBoxFile[j][4]) {
-        double iou = IoU(cmpFullTrayBoundingBoxFile[i], refFullTrayBoundingBoxFile[j]);
-        if (iou > 0.5) {
+  for(int categoryID = 1; categoryID < 14; categoryID++) {
 
+    std::vector<bool> matches; // 1 is a true positive, 0 is a false positive
+    int cumulative_true_positives = 0;
+    int cumulative_false_positives = 0;
+
+    for(int trayID = 1; trayID < 8; trayID++) {
+
+      for(int imageID = 0; imageID < 4; imageID++) {
+
+        std::vector<std::vector<int>> refBoundingBox = refTotalTrayBoundingBoxFiles[trayID-1][imageID];
+        std::vector<std::vector<int>> cmpBoundingBox = cmpTotalTrayBoundingBoxFiles[trayID-1][imageID];
+
+        // Check if the category is present in the cmpBoundingBox
+        for(int i = 0; i < cmpBoundingBox.size(); i++) {
+
+          // If the category is present in the cmpBoundingBox
+          if(cmpBoundingBox[i][4] == categoryID) {
+
+            for(int j = 0; j < refBoundingBox.size(); j++) {
+
+              // Check if there is a bounding box with at least 0.5 IoU
+              double iou = IoU(cmpBoundingBox[i], refBoundingBox[j]);
+
+              if(iou > 0.5) {
+                // Check if the category is the same
+                if(cmpBoundingBox[i][4] == refBoundingBox[j][4]) {
+                  matches.push_back(1);
+                } else {
+                  matches.push_back(0);
+                }
+
+              }
+
+            }
+
+          }
+        }
+
+      }
+
+    }
+
+    // Sort the matches vector in descending order TODO SBAGLIATO
+    std::sort(matches.begin(), matches.end(), std::greater<int>());
+
+    std::vector<double> precision(matches.size());
+    std::vector<double> recall(matches.size());
+
+    for(int i = 0; i < matches.size(); i++) {
+      if(matches[i] == 1) {
+        cumulative_true_positives = cumulative_true_positives + 1;
+      } else {
+        cumulative_false_positives = cumulative_false_positives + 1;
+      }
+      precision[i] = (double)cumulative_true_positives / (double)(cumulative_true_positives + cumulative_false_positives);
+      recall[i] = (double)cumulative_true_positives / (double)matches.size();
+    }
+
+    // Calculate Average Precision (AP) using PASCAL VOC 11 Point Interpolation Method
+    double ap = 0;
+    for(int i = 0; i < 11; i++) {
+      double max_precision = 0;
+      for(int j = 0; j < precision.size(); j++) {
+        if(recall[j] >= (double)i/10) {
+          if(precision[j] > max_precision) {
+            max_precision = precision[j];
+          }
         }
       }
+      ap = ap + max_precision;
     }
+
+    average_precision[categoryID] = ap/11;
+
   }
 
-  return 0.2;
+  double mean_average_precision = 0;
+  for(int i = 0; i < average_precision.size(); i++) {
+    mean_average_precision = mean_average_precision + average_precision[i];
+  }
+
+  mean_average_precision = mean_average_precision/average_precision.size();
+
+  return mean_average_precision;
 
 }
 

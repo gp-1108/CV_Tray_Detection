@@ -225,7 +225,9 @@ bool saladDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vecto
     for(int i = 0; i < wshed.rows; i++) {
       for(int j = 0; j < wshed.cols; j++) {
         if(wshed.at<cv::Vec3b>(i, j) == cv::Vec3b(255,255,255)) {
-          cmp_tray_mask.at<uchar>(top_left.y + i, top_left.x + j) = 12; //12 is salad category
+          if(top_left.x + j < cmp_tray_mask.cols && top_left.y + i < cmp_tray_mask.rows && top_left.x + j >= 0 && top_left.y + i >= 0) {
+            cmp_tray_mask.at<uchar>(top_left.y + i, top_left.x + j) = 12; //12 is salad category
+          }
         }
       }
     }

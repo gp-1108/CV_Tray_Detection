@@ -33,14 +33,17 @@ void datasetExecution(std::string& pathToDataset, ImagePredictor& predictor) {
   std::vector<double> cmpConfidenceEmptyTray;
 
   // At index [i,j] contains the tray i+1, leftover j (j=0 for food_image.jpg)
-  std::vector<std::vector<std::vector<std::vector<int>>>> totalTrayBoundingBoxFiles; // each vector is a bounding box, structure: [x, y, width, height, categoryID]
+  std::vector<std::vector<std::vector<std::vector<int>>>> refTotalTrayBoundingBoxFiles; // each vector is a bounding box, structure: [x, y, width, height, categoryID]
+  std::vector<std::vector<std::vector<std::vector<int>>>> cmpTotalTrayBoundingBoxFiles; // each vector is a bounding box, structure: [x, y, width, height, categoryID]
+
   for(int i = 0; i < 8; i++) {
     std::vector<std::vector<std::vector<int>>> tray;
     for(int j = 0; j < 4; j++) {
       std::vector<std::vector<int>> leftover;
       tray.push_back(leftover);
     }
-    totalTrayBoundingBoxFiles.push_back(tray);
+    cmpTotalTrayBoundingBoxFiles.push_back(tray);
+    refTotalTrayBoundingBoxFiles.push_back(tray);
   }
 
 
@@ -68,7 +71,8 @@ void datasetExecution(std::string& pathToDataset, ImagePredictor& predictor) {
     fullTrayExecution(fullTray, cmpFullTrayMask, cmpSingleFullTrayBoundingBoxFile, cmpConfidenceFullTray, saladFound, breadFound, predictor);
 
     // Save the bounding boxes of the full tray
-    totalTrayBoundingBoxFiles[i-1][0] = cmpSingleFullTrayBoundingBoxFile;
+    cmpTotalTrayBoundingBoxFiles[i-1][0] = cmpSingleFullTrayBoundingBoxFile;
+    refTotalTrayBoundingBoxFiles[i-1][0] = refSingleFullTrayBoundingBoxFile;
 
     // Loop for each leftover (from 1 to 3)
     for(int j = 1; j < 4; j++) {
@@ -86,22 +90,31 @@ void datasetExecution(std::string& pathToDataset, ImagePredictor& predictor) {
       emptyTrayExecution(emptyTray, cmpEmptyTrayMask, cmpSingleEmptyTrayBoundingBoxFile, cmpConfidenceEmptyTray, saladFound, breadFound, predictor);
 
       // Save the bounding boxes of the full tray
-      totalTrayBoundingBoxFiles[i-1][j] = cmpSingleEmptyTrayBoundingBoxFile;
+      cmpTotalTrayBoundingBoxFiles[i-1][j] = cmpSingleEmptyTrayBoundingBoxFile;
+      refTotalTrayBoundingBoxFiles[i-1][j] = refSingleEmptyTrayBoundingBoxFile;
 
       // Compute the leftover estimation
       //std::vector<double> leftover_estimation = leftover_estimator(cmpFullTrayMask, cmpEmptyTrayMask);
-      
-      // Print the results
+      //
+      //// Print the results
       //for(int k = 0; k < leftover_estimation.size(); k++) {
       //  std::cout << "Leftover " << k+1 << " estimation: " << leftover_estimation[k] << std::endl;
       //}
 
+      cmpSingleEmptyTrayBoundingBoxFile.erase(cmpSingleEmptyTrayBoundingBoxFile.begin(), cmpSingleEmptyTrayBoundingBoxFile.end());
       refSingleEmptyTrayBoundingBoxFile.erase(refSingleEmptyTrayBoundingBoxFile.begin(), refSingleEmptyTrayBoundingBoxFile.end());
 
     }
 
+    cmpSingleFullTrayBoundingBoxFile.erase(cmpSingleFullTrayBoundingBoxFile.begin(), cmpSingleFullTrayBoundingBoxFile.end());
     refSingleFullTrayBoundingBoxFile.erase(refSingleFullTrayBoundingBoxFile.begin(), refSingleFullTrayBoundingBoxFile.end());
 
   }
+
+  // Compute the final results
+  double map = localization_estimator(refTotalTrayBoundingBoxFiles, cmpTotalTrayBoundingBoxFiles);
+  std::cout << "\nMAP: " << map << std::endl;
+
+  std::cout << "THE END" << std::endl;
 
 }

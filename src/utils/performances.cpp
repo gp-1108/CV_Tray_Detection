@@ -88,7 +88,7 @@ double segmentation_estimator(std::vector<std::vector<int>>& cmpFullTrayBounding
 
 }
 
-double localization_estimator(const std::vector<std::vector<std::vector<std::vector<int>>>> refTotalTrayBoundingBoxFiles, const std::vector<std::vector<std::vector<std::vector<int>>>> cmpTotalTrayBoundingBoxFiles) {
+double localization_estimator(const std::vector<std::vector<std::vector<std::vector<int>>>>& refTotalTrayBoundingBoxFiles, const std::vector<std::vector<std::vector<std::vector<int>>>>& cmpTotalTrayBoundingBoxFiles) {
 
   std::vector<double> average_precision(13);
 
@@ -102,8 +102,24 @@ double localization_estimator(const std::vector<std::vector<std::vector<std::vec
 
       for(int imageID = 0; imageID < 4; imageID++) {
 
-        std::vector<std::vector<int>> refBoundingBox = refTotalTrayBoundingBoxFiles[trayID-1][imageID];
-        std::vector<std::vector<int>> cmpBoundingBox = cmpTotalTrayBoundingBoxFiles[trayID-1][imageID];
+        // std::vector<std::vector<int>> refBoundingBox = refTotalTrayBoundingBoxFiles[trayID-1][imageID];
+        std::vector<std::vector<int>> refBoundingBox;
+        for(int i = 0; i < refTotalTrayBoundingBoxFiles[trayID-1][imageID].size(); i++) {
+          std::vector<int> temp;
+          for (int j = 0; j < refTotalTrayBoundingBoxFiles[trayID-1][imageID][i].size(); j++) {
+            temp.push_back(refTotalTrayBoundingBoxFiles[trayID-1][imageID][i][j]);
+          }
+          refBoundingBox.push_back(temp);
+        }
+        // std::vector<std::vector<int>> cmpBoundingBox = cmpTotalTrayBoundingBoxFiles[trayID-1][imageID];
+        std::vector<std::vector<int>> cmpBoundingBox;
+        for(int i = 0; i < cmpTotalTrayBoundingBoxFiles[trayID-1][imageID].size(); i++) {
+          std::vector<int> temp;
+          for (int j = 0; j < cmpTotalTrayBoundingBoxFiles[trayID-1][imageID][i].size(); j++) {
+            temp.push_back(cmpTotalTrayBoundingBoxFiles[trayID-1][imageID][i][j]);
+          }
+          cmpBoundingBox.push_back(temp);
+        }
 
         // Check if the category is present in the cmpBoundingBox
         for(int i = 0; i < cmpBoundingBox.size(); i++) {

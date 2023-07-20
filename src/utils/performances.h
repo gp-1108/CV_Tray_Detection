@@ -8,8 +8,8 @@ std::vector<double> leftover_estimator(cv::Mat& cmpFullTrayMask, cv::Mat& cmpEmp
 double segmentation_estimator(std::vector<std::vector<int>>& cmpFullTrayBoundingBoxFile, 
                               std::vector<std::vector<int>>& refFullTrayBoundingBoxFile);
 double IoU(std::vector<int>& cmpBoundingBox, std::vector<int>& refBoundingBox);
-double localization_estimator(const std::vector<std::vector<std::vector<std::vector<int>>>> refTotalTrayBoundingBoxFiles, 
-                              const std::vector<std::vector<std::vector<std::vector<int>>>> cmpTotalTrayBoundingBoxFiles);
+double localization_estimator(const std::vector<std::vector<std::vector<std::vector<int>>>>& refTotalTrayBoundingBoxFiles, 
+                              const std::vector<std::vector<std::vector<std::vector<int>>>>& cmpTotalTrayBoundingBoxFiles);
 void performances(cv::Mat& cmpFullTrayMask, cv::Mat& cmpEmptyTrayMask, cv::Mat& refFullTrayMask, 
                   cv::Mat& refEmptyTrayMask, std::vector<std::vector<int>>& cmpFullTrayBoundingBoxFile, 
                   std::vector<std::vector<int>>& cmpEmptyTrayBoundingBoxFile, 

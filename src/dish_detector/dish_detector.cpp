@@ -1,6 +1,4 @@
-#include <iostream>
-#include <opencv2/opencv.hpp>
-
+#include "dish_detector.h"
 #include "../model/ImagePredictor.h"
 
 void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_mask, std::vector<std::vector<int>>& bb, ImagePredictor& predictor, std::vector<double>& confidenceVector){

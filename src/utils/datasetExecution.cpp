@@ -94,27 +94,55 @@ void datasetExecution(std::string& pathToDataset, ImagePredictor& predictor) {
       refTotalTrayBoundingBoxFiles[i-1][j] = refSingleEmptyTrayBoundingBoxFile;
 
       // Compute the leftover estimation
-      //std::vector<double> leftover_estimation = leftover_estimator(cmpFullTrayMask, cmpEmptyTrayMask);
-      //
-      //// Print the results
-      //for(int k = 0; k < leftover_estimation.size(); k++) {
-      //  std::cout << "Leftover " << k+1 << " estimation: " << leftover_estimation[k] << std::endl;
-      //}
+      std::vector<double> leftover_estimation = leftover_estimator(cmpFullTrayMask, cmpEmptyTrayMask);
+
+      // Save the leftover estimation
+      std::ofstream resultsFile;
+      resultsFile.open("../results/resultsLeftoverEstimation.txt");
+      for(int k = 0; k < leftover_estimation.size(); k++) {
+        resultsFile << "Tray " << i << ", Leftover " << j << ", estimation: " << leftover_estimation[i] << std::endl;
+      }
+      resultsFile.close();
 
       cmpSingleEmptyTrayBoundingBoxFile.erase(cmpSingleEmptyTrayBoundingBoxFile.begin(), cmpSingleEmptyTrayBoundingBoxFile.end());
       refSingleEmptyTrayBoundingBoxFile.erase(refSingleEmptyTrayBoundingBoxFile.begin(), refSingleEmptyTrayBoundingBoxFile.end());
+
+      // Save the masks computed
+      cv::imwrite("../results/masks/tray" + std::to_string(i) + "/masks/leftover" + std::to_string(j) + "_mask.png", cmpEmptyTrayMask);
 
     }
 
     cmpSingleFullTrayBoundingBoxFile.erase(cmpSingleFullTrayBoundingBoxFile.begin(), cmpSingleFullTrayBoundingBoxFile.end());
     refSingleFullTrayBoundingBoxFile.erase(refSingleFullTrayBoundingBoxFile.begin(), refSingleFullTrayBoundingBoxFile.end());
 
+    // Save the mask computed
+    cv::imwrite("../results/tray" + std::to_string(i) + "/masks/food_image_mask.png", cmpFullTrayMask);
+
   }
 
   // Compute the final results
   double map = localization_estimator(refTotalTrayBoundingBoxFiles, cmpTotalTrayBoundingBoxFiles);
-  std::cout << "\nMAP: " << map << std::endl;
 
-  std::cout << "THE END" << std::endl;
+  // Save the bounding boxes computed in a txt, each row "ID: categoryID; [x, y, width, height]"
+  std::ofstream stream;
+  for(int i = 0; i < cmpTotalTrayBoundingBoxFiles.size(); i++) {
+    for(int j = 0; j < cmpTotalTrayBoundingBoxFiles[i].size(); j++) {
+      for(int k = 0; k < cmpTotalTrayBoundingBoxFiles[i][j].size(); k++) {
+        if(j == 0)
+          stream.open("../results/tray" + std::to_string(i) + "/bouding_boxes/food_image_bounding_box.txt");
+        else
+          stream.open("../results/" + std::to_string(i) + "bouding_boxes/leftover" + std::to_string(j) + "_bounding_box.txt", std::ios_base::app);
+        stream.open("../results/bouding_boxes/resultsBoundingBoxes.txt");
+        stream << "ID: " << cmpTotalTrayBoundingBoxFiles[i][j][k][4] << "; [" << cmpTotalTrayBoundingBoxFiles[i][j][k][0] << ", " << cmpTotalTrayBoundingBoxFiles[i][j][k][1] << ", " << cmpTotalTrayBoundingBoxFiles[i][j][k][2] << ", " << cmpTotalTrayBoundingBoxFiles[i][j][k][3] << "]" << std::endl;
+      }
+    }
+  }
+  stream.close();
+
+  // Save the MAP and the leftover in a file
+  std::ofstream resultsFile;
+  resultsFile.open("../results/resultsMAP.txt");
+  resultsFile << "MAP: " << map << std::endl;
+  resultsFile.close();
 
 }

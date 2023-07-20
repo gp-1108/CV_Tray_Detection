@@ -195,18 +195,3 @@ double localization_estimator(const std::vector<std::vector<std::vector<std::vec
   return mean_average_precision;
 
 }
-
-void performances(cv::Mat& cmpFullTrayMask, cv::Mat& cmpEmptyTrayMask, cv::Mat& refFullTrayMask, cv::Mat& refEmptyTrayMask, std::vector<std::vector<int>>& cmpFullTrayBoundingBoxFile, std::vector<std::vector<int>>& cmpEmptyTrayBoundingBoxFile, std::vector<std::vector<int>>& refFullTrayBoundingBoxFile, std::vector<std::vector<int>>& refEmptyTrayBoundingBoxFile, std::vector<double>& cmpConfidenceFullTray, std::vector<double>& cmpConfidenceEmptyTray) {
-
-  // Compute the leftover ratio 
-  std::vector<double> leftover_estimation = leftover_estimator(cmpFullTrayMask, cmpEmptyTrayMask);
-
-  // Compute the segmentation ratio for first tray
-  double first_segmentation = segmentation_estimator(cmpFullTrayBoundingBoxFile, refFullTrayBoundingBoxFile);
-
-  // Compute the segmentation ratio for second tray
-  double second_segmentation = segmentation_estimator(cmpEmptyTrayBoundingBoxFile, refEmptyTrayBoundingBoxFile);
-
-  //double map = localization_estimator(cmpFullTrayBoundingBoxFile, refFullTrayBoundingBoxFile, cmpConfidenceFullTray);
-
-}

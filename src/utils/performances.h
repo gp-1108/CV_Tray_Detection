@@ -10,12 +10,5 @@ double segmentation_estimator(std::vector<std::vector<int>>& cmpFullTrayBounding
 double IoU(std::vector<int>& cmpBoundingBox, std::vector<int>& refBoundingBox);
 double localization_estimator(const std::vector<std::vector<std::vector<std::vector<int>>>>& refTotalTrayBoundingBoxFiles, 
                               const std::vector<std::vector<std::vector<std::vector<int>>>>& cmpTotalTrayBoundingBoxFiles);
-void performances(cv::Mat& cmpFullTrayMask, cv::Mat& cmpEmptyTrayMask, cv::Mat& refFullTrayMask, 
-                  cv::Mat& refEmptyTrayMask, std::vector<std::vector<int>>& cmpFullTrayBoundingBoxFile, 
-                  std::vector<std::vector<int>>& cmpEmptyTrayBoundingBoxFile, 
-                  std::vector<std::vector<int>>& refFullTrayBoundingBoxFile, 
-                  std::vector<std::vector<int>>& refEmptyTrayBoundingBoxFile, 
-                  std::vector<double>& cmpConfidenceFullTray, 
-                  std::vector<double>& cmpConfidenceEmptyTray);
-
+                              
 #endif // PERFORMANCES_H

@@ -3,15 +3,9 @@
 
 #include "../model/ImagePredictor.h"
 
-/*
-This function receives a tray image as input, extract the single plates from the tray and for each plate compute the mask for
-the dish inside
-
-*/
-
 void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_mask, std::vector<std::vector<int>>& bb, ImagePredictor& predictor, std::vector<double>& confidenceVector){
 
-  std::map<std::string, int> categories = { //TODO perchè non posso mettere const???
+  std::map<std::string, int> categories = {
     {"Background", 0},
     {"pasta with pesto", 1},
     {"pasta with tomato sauce", 2},
@@ -29,23 +23,21 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
   };
 
 
-  cv::Mat img = plate.clone(); //copia dell'originale
+  cv::Mat img = plate.clone(); 
   cv::Mat untouched = plate.clone();
   cv::Mat mask = img.clone();
 
   cv::Mat edges;
-  cv::Canny(img, edges, 100, 70); //100 70
-
-  //print_image(edges, "Edges", 0);
+  cv::Canny(img, edges, 100, 70); //compute canny edges
 
   cv::Mat labels;
   cv::Mat stats;
   cv::Mat centroids;
-  int nComps = cv::connectedComponentsWithStats(edges, labels, stats, centroids);
+  int nComps = cv::connectedComponentsWithStats(edges, labels, stats, centroids); //connected components to elimnate to small regions
 
   for(int i = 0; i < img.rows; i++){
       for(int j = 0; j < img.cols; j++){
-          if(stats.at<int>(labels.at<int>(i,j), cv::CC_STAT_AREA) < 100){ //100
+          if(stats.at<int>(labels.at<int>(i,j), cv::CC_STAT_AREA) < 100){ 
               edges.at<uchar>(i,j) = 0;
           }
       }
@@ -54,22 +46,22 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
   int point_x = img.rows / 2;
   int point_y = img.cols / 2;
 
-  cv::Point image_center(point_x, point_y); //centro dell'immagine
+  cv::Point image_center(point_x, point_y); 
 
-  cv::circle(mask, image_center, point_x - 0.3 * point_x, cv::Scalar(255,0,0), cv::FILLED); //disegno cerchio su maschera
+  cv::circle(mask, image_center, point_x - 0.3 * point_x, cv::Scalar(255,0,0), cv::FILLED); //circular mask for watershed
 
-  cv::Mat dilation_elem = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5));
+  cv::Mat dilation_elem = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(5, 5)); 
   cv::Mat dilation_elem_1 = cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3));
 
   cv::Mat dilation;
-  cv::dilate(edges, edges, dilation_elem_1, cv::Point(-1, -1), 1);
-  cv::dilate(edges, dilation, dilation_elem, cv::Point(-1, -1), 15); //anche 16 è buono
+  cv::dilate(edges, edges, dilation_elem_1, cv::Point(-1, -1), 1); //dilation of seed
+  cv::dilate(edges, dilation, dilation_elem, cv::Point(-1, -1), 15); 
 
-  cv::Mat not_sure = dilation - edges;
+  cv::Mat not_sure = dilation - edges; //area in wich watershed makes its computation
   
-  cv::Mat mask_for_markers(img.size(), CV_8UC1, cv::Scalar(128)); //creo la maschera per i markers di Watershed
+  cv::Mat mask_for_markers(img.size(), CV_8UC1, cv::Scalar(128)); //markers for watershed
   
-  for(int i = 0; i < img.rows; i++){ //riempio la maschera per diventare markers per Watershed
+  for(int i = 0; i < img.rows; i++){ 
       for(int j = 0; j < img.cols; j++){
 
           if(edges.at<uchar>(i,j) == 255 && mask.at<cv::Vec3b>(i,j) == cv::Vec3b(255,0,0)){ 
@@ -84,16 +76,14 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
       }
   }
 
-  //print_image(mask_for_markers, "Mask from color filter", 0);
-
   labels;
   stats;
   centroids;
-  nComps = cv::connectedComponentsWithStats(mask_for_markers, labels, stats, centroids);
+  nComps = cv::connectedComponentsWithStats(mask_for_markers, labels, stats, centroids); //new computation on connected components to eliminate weak seeds
 
   for(int i = 0; i < img.rows; i++){
       for(int j = 0; j < img.cols; j++){
-          if(stats.at<int>(labels.at<int>(i,j), cv::CC_STAT_AREA) < 300){ //100
+          if(stats.at<int>(labels.at<int>(i,j), cv::CC_STAT_AREA) < 300){ 
               mask_for_markers.at<uchar>(i,j) = 0;
           }
       }
@@ -101,9 +91,9 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
 
   cv::Mat markers;
 
-  mask_for_markers.cv::Mat::convertTo(markers, CV_32SC1); //converto la maschera in markers
+  mask_for_markers.cv::Mat::convertTo(markers, CV_32SC1);
 
-  cv::watershed(img, markers); //eseguo Watershed
+  cv::watershed(img, markers); 
 
   cv::Mat markers_elab(markers.size(), CV_8UC1, cv::Scalar(0));
   cv::Mat dst = cv::Mat::zeros(markers.size(), CV_8UC1);
@@ -114,7 +104,7 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
           
           if(markers.at<int>(i,j) == 255){
               markers_elab.at<uchar>(i,j) = 255;
-              output.at<cv::Vec3b>(i,j) = untouched.at<cv::Vec3b>(i,j);
+              output.at<cv::Vec3b>(i,j) = untouched.at<cv::Vec3b>(i,j); //
           }
           else{
               markers_elab.at<uchar>(i,j) = 0;
@@ -123,12 +113,12 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
   }
 
 
-  std::vector<double> result = predictor.predict(output);
+  std::vector<double> result = predictor.predict(output); //predict output on mask
 
   double max_confidence = 0;
   int max_index = 0;
 
-  for(int i = 0; i < result.size(); i++){
+  for(int i = 0; i < result.size(); i++){ //get max_confidence label
     if(result[i] > max_confidence){
       max_confidence = result[i];
       max_index = i;
@@ -147,7 +137,7 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
     }
   }
 
-  cv::Rect bounding_box = boundingRect(dst);
+  cv::Rect bounding_box = boundingRect(dst); //generate bounding box on found mask
 
   std::vector<int> value = {top_left.x + bounding_box.x, top_left.y + bounding_box.y, bounding_box.width, bounding_box.height, max_index + 1};
 
@@ -156,13 +146,13 @@ void segment_dish(const cv::Mat& plate, cv::Point top_left, cv::Mat& cmp_tray_ma
 
 bool dishDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vector<int>>& bb, ImagePredictor& predictor, std::vector<double>& confidenceVector){
 
-  cv::Mat img = tray.clone(); //copio originale 
+  cv::Mat img = tray.clone(); 
 
   int minRadius = 0.195 * img.cols;
   int maxRadius = 0.554 * img.cols;
 
-  int padding = 400; //da valutare se diminuire a 200
-  cv::copyMakeBorder(img, img, padding, padding, padding, padding, cv::BORDER_CONSTANT, cv::Scalar(0,0,0)); //lo incornicio
+  int padding = 400; 
+  cv::copyMakeBorder(img, img, padding, padding, padding, padding, cv::BORDER_CONSTANT, cv::Scalar(0,0,0)); 
   
   cv::Mat gray;
   cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY); 
@@ -172,7 +162,7 @@ bool dishDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vector
 
   std::vector<cv::Vec3f> circles;
 
-  cv::HoughCircles(blurred, circles, cv::HOUGH_GRADIENT, 1.5, 480, 120, 120, 250, 700); //si può pensare di rendere il raggio dipendente dalla grandezza dell'immagine, una sorta di normalizzazione 0.195 * img.cols, 0.55 * img.cols minRad = 250, maxRad = 700
+  cv::HoughCircles(blurred, circles, cv::HOUGH_GRADIENT, 1.5, 480, 120, 120, 250, 700); //compute plates location
 
   cv::Point top_left, bottom_right;
 
@@ -184,36 +174,35 @@ bool dishDetector(cv::Mat& tray, cv::Mat& cmp_tray_mask, std::vector<std::vector
     }
 
     cv::Mat mask = img.clone();
-    cv::Mat to_be_cropped(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0)); //immagine da riempiere per essere ritagliata generando i diversi piatti
+    cv::Mat to_be_cropped(img.rows, img.cols, CV_8UC3, cv::Scalar(0,0,0)); 
 
-    int center_x = cvRound(circles[i][0]); //x del centro
-    int center_y = cvRound(circles[i][1]); //y del centro
+    int center_x = cvRound(circles[i][0]); 
+    int center_y = cvRound(circles[i][1]); 
 
-    cv::Point center(center_x, center_y); //il centro
+    cv::Point center(center_x, center_y); 
 
-    int radius = cvRound(circles[i][2]); //il raggio
-    int pad = 20; //margine preso dalla fine del cerchio per il ritaglio 20
-    int dim = 2 * (radius + pad); //dimensione ritaglio
+    int radius = cvRound(circles[i][2]); 
+    int pad = 20; 
+    int dim = 2 * (radius + pad); 
 
-    cv::circle(mask, center, radius, cv::Scalar(255,0,0), cv::FILLED); //disegno cerchio su maschera
+    cv::circle(mask, center, radius, cv::Scalar(255,0,0), cv::FILLED); 
     
-    for(int i = 0; i < mask.rows; i++){ //metto su sfondo nero i piatti
+    for(int i = 0; i < mask.rows; i++){ 
       for(int j = 0; j < mask.cols; j++){
         if(mask.at<cv::Vec3b>(i,j) == cv::Vec3b(255,0,0)){
           to_be_cropped.at<cv::Vec3b>(i,j) = img.at<cv::Vec3b>(i,j);
           if(i - padding >= 0 && j - padding >= 0 && i - padding < tray.rows && j - padding < tray.cols) {
-            tray.at<cv::Vec3b>(i - padding,j - padding) = cv::Vec3b(0,0,0); //elimino piatti dal vassoio originale
+            tray.at<cv::Vec3b>(i - padding,j - padding) = cv::Vec3b(0,0,0); //eliminate plates from original tray to make faster and easier computation for bread and salad
           }
         }
       }
     }
 
-    cv::Point top_left(center_x - radius - pad, center_y - radius - pad); //prendo punto in alto a sinistra per ritaglio
-    cv::Point bottom_right(center_x + radius + pad, center_y + radius + pad); //prendo punto in basso a destra per ritaglio
+    cv::Point top_left(center_x - radius - pad, center_y - radius - pad); 
+    cv::Point bottom_right(center_x + radius + pad, center_y + radius + pad);
     cv::Rect rect(top_left.x, top_left.y, dim, dim);
-    //rectangle(mask, top_left, bottom_right, Scalar(255,0,0), 2, LINE_8);
 
-    cv::Mat plate = to_be_cropped(rect); //prima della modifica Mat plate = to_be_cropped(Rect(top_left.x, top_left.y, dim, dim));
+    cv::Mat plate = to_be_cropped(rect); //generate the images to be further processed
 
     top_left.x -= padding;
     top_left.y -= padding;
